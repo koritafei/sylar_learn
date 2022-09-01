@@ -1,0 +1,9 @@
+build --cxxopt="--std=c++2b"
+build --copt=-O2
+build --copt=-ggdb
+build -c dbg --verbose_failures
+build --remote_upload_local_results=false
+build --color=yes
+build --copt -DHAVE_ZLIB=1
+build --show_timestamps --keep_going --jobs 600
+test --cache_test_results=no --test_output=errors
