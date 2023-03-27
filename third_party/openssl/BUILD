@@ -11,21 +11,24 @@ config_setting(
 
 cc_library(
     name = "libcrypto",
-    hdrs = glob(["include/openssl/*.h"]),
     srcs = glob(["lib64/libcrypto.so"]),
+    hdrs = glob(["include/openssl/*.h"]),
     includes = ["include"],
     linkopts = select({
         ":darwin": [],
-        "//conditions:default": ["-lpthread", "-ldl"],
+        "//conditions:default": [
+            "-lpthread",
+            "-ldl",
+        ],
     }),
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "libssl",
-    deps = [":libcrypto"],
-    hdrs = glob(["include/openssl/*.h"]),
     srcs = glob(["lib64/libssl.so"]),
+    hdrs = glob(["include/openssl/*.h"]),
     includes = ["include"],
     visibility = ["//visibility:public"],
+    deps = [":libcrypto"],
 )

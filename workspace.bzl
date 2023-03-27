@@ -79,6 +79,7 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
     protobuf_sha256 = kwargs.get("protobuf_sha256", "03d2e5ef101aee4c2f6ddcf145d2a04926b9c19e7086944df3842b1b8502b783")
     protobuf_strip_prefix = "protobuf-{ver}".format(ver = protobuf_ver)
     protobuf_urls = [
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v{ver}.tar.gz".format(ver = protobuf_ver),
         "https://github.com/protocolbuffers/protobuf/archive/v{ver}.tar.gz".format(ver = protobuf_ver),
     ]
     sylar_http_archive(
@@ -151,7 +152,7 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
     com_github_jbeder_yaml_cpp_urls = [
         "https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-{ver}.tar.gz".format(ver = com_github_jbeder_yaml_cpp_ver),
     ]
-    sylar_http_archive(
+    http_archive(
         name = "com_github_jbeder_yaml_cpp",
         build_file = clean_dep("//third_party/yaml-cpp:yaml-cpp.BUILD"),
         sha256 = com_github_jbeder_yaml_cpp_sha256,
@@ -244,6 +245,12 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
         build_file = "@rainbow_sdk//third_party/crypto:BUILD.crypto",
         path = "/usr",
     )
+
+    # native.new_local_repository(
+    #     name = "boost",
+    #     path = "/your/path/to/boost",
+    #     build_file = "third_party/boost.BUILD",
+    # )
 
     # fmtlib
     fmt_ver = kwargs.get("fmt_ver", "6.2.0")

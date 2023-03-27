@@ -1,20 +1,7 @@
-package(
-    default_visibility = ["//sylar:internal"],
-)
+# Description: sylar-cpp.
+licenses(["notice"])
 
-package_group(
-    name = "internal",
-    packages = [
-        "//sylar/...",
-    ],
-)
-
-filegroup(
-    name = "all_files",
-    srcs = glob(
-        ["**/*"],
-    ),
-)
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "function_traits",
