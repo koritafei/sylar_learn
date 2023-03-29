@@ -1,3 +1,3 @@
-load("//:workspace.bzl", "sylar_workspace")
+load("//sylar:workspace.bzl", "sylar_workspace")
 
 sylar_workspace()

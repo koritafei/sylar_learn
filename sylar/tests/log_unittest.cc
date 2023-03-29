@@ -1,4 +1,4 @@
-#include "log.h"
+#include "sylar/log.h"
 
 #include <iostream>
 
@@ -29,6 +29,6 @@ int main() {
 
   LOG_FMT_ERROR(logger, "test macro fmt error %s", "aa");
 
-  auto l = sylar::loggerMgr::GetInstance()->getLogger("xx");
+  auto l = sylar::LoggerMgr::GetInstance()->getLogger("xx");
   LOG_INFO(l) << "xxx";
 }

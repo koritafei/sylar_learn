@@ -1,4 +1,4 @@
-# Description: sylar-cpp.
+# Description: trpc-cpp.
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])

@@ -1,4 +1,4 @@
-#include "log.h"
+#include "sylar/log.h"
 
 #include <sstream>
 
@@ -438,8 +438,7 @@ bool FileLogAppender::reopen() {
   if (m_filestream.is_open()) {
     m_filestream.close();
   }
-  m_filestream.open(m_filename, std::ios::app);
-  return m_filestream.is_open();
+  return FSUtil::OpenForWrite(m_filestream, m_filename, std::ios::app);
 }
 
 void FileLogAppender::logger(std::shared_ptr<Logger> logger,
@@ -567,6 +566,67 @@ Logger::ptr LoggerManager::getLogger(const std::string& name) {
 }
 
 void LoggerManager::init() {
+}
+
+std::string Logger::toYamlString() {
+  YAML::Node node;
+  node["name"] = m_name;
+  if (m_level != LogLevel::UNKNOWN) {
+    node["level"] = LogLevel::toString(m_level);
+  }
+
+  if (m_formatter) {
+    node["formatter"] = m_formatter->getPattern();
+  }
+  for (auto& i : m_appender) {
+    node["appenders"].push_back(YAML::Load(i->toYamlString()));
+  }
+
+  std::stringstream ss;
+  ss << node;
+  return ss.str();
+}
+
+std::string FileLogAppender::toYamlString() {
+  YAML::Node node;
+  node["name"] = "FileLogAppender";
+  node["file"] = m_filename;
+  if (m_level != LogLevel::UNKNOWN) {
+    node["level"] = LogLevel::toString(m_level);
+  }
+  if (m_hasFormatter && m_formatter) {
+    node["fofrmatter"] = m_formatter->getPattern();
+  }
+
+  std::stringstream ss;
+  ss << node;
+  return ss.str();
+}
+
+std::string StdoutLogAppender::toYamlString() {
+  YAML::Node node;
+  node["name"] = "StdoutLogAppender";
+  if (m_level != LogLevel::UNKNOWN) {
+    node["level"] = LogLevel::toString(m_level);
+  }
+  if (m_hasFormatter && m_formatter) {
+    node["fofrmatter"] = m_formatter->getPattern();
+  }
+
+  std::stringstream ss;
+  ss << node;
+  return ss.str();
+}
+
+std::string LoggerManager::toYamlString() {
+  YAML::Node node;
+  for (auto& i : m_loggers) {
+    node.push_back(YAML::Load(i.second->toYamlString()));
+  }
+
+  std::stringstream ss;
+  ss << node;
+  return ss.str();
 }
 
 }  // namespace sylar

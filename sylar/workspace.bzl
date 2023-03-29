@@ -1,12 +1,12 @@
 load("//third_party:repo.bzl", "sylar_http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def clean_dep(dep):
     return str(Label(dep))
 
 def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
-    """构建tbrpc工程规则.
+    """构建sylar工程规则.
     NOTE:主要是通过传入参数来决定工程构建过程中所需依赖软件的版本
     Args:
         path_prefix:路径前缀
@@ -137,6 +137,7 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
     com_github_gflags_gflags_ver = kwargs.get("com_github_gflags_gflags_ver", "2.2.2")
     com_github_gflags_gflags_sha256 = kwargs.get("com_github_gflags_gflags_sha256", "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf")
     com_github_gflags_gflags_urls = [
+        "https://mirror.bazel.build/github.com/gflags/gflags/archive/v{ver}.tar.gz".format(ver = com_github_gflags_gflags_ver),
         "https://github.com/gflags/gflags/archive/v{ver}.tar.gz".format(ver = com_github_gflags_gflags_ver),
     ]
     http_archive(
@@ -147,12 +148,12 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
     )
 
     # com_github_jbeder_yaml_cpp 版本 摘要
-    com_github_jbeder_yaml_cpp_ver = kwargs.get("com_github_jbeder_yaml_cpp_ver", "0.6.2")
-    com_github_jbeder_yaml_cpp_sha256 = kwargs.get("com_github_jbeder_yaml_cpp_sha256", "e4d8560e163c3d875fd5d9e5542b5fd5bec810febdcba61481fe5fc4e6b1fd05")
+    com_github_jbeder_yaml_cpp_ver = kwargs.get("com_github_jbeder_yaml_cpp_ver", "0.7.0")
+    com_github_jbeder_yaml_cpp_sha256 = kwargs.get("com_github_jbeder_yaml_cpp_sha256", "43e6a9fcb146ad871515f0d0873947e5d497a1c9c60c58cb102a97b47208b7c3")
     com_github_jbeder_yaml_cpp_urls = [
         "https://github.com/jbeder/yaml-cpp/archive/yaml-cpp-{ver}.tar.gz".format(ver = com_github_jbeder_yaml_cpp_ver),
     ]
-    http_archive(
+    sylar_http_archive(
         name = "com_github_jbeder_yaml_cpp",
         build_file = clean_dep("//third_party/yaml-cpp:yaml-cpp.BUILD"),
         sha256 = com_github_jbeder_yaml_cpp_sha256,
@@ -246,15 +247,25 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
         path = "/usr",
     )
 
-    # native.new_local_repository(
-    #     name = "boost",
-    #     path = "/your/path/to/boost",
-    #     build_file = "third_party/boost.BUILD",
-    # )
+    # 说明：北极星SDK使用了nghttp2
+    # 注意：此处的nghttp2版本和框架使用的北极星SDK中使用的nghttp2保持一致
+    # 如果要升级此处版本或者升级框架的nghttp2时，请二次确认下两处版本保持一致。
+    nghttp2_ver = kwargs.get("nghttp2_ver", "1.40.0")
+
+    # 说明：正则表达式库, 北极星SDK中规则匹配过程中有使用到
+    if not native.existing_rule("com_googlesource_code_re2"):
+        http_archive(
+            name = "com_googlesource_code_re2",
+            sha256 = "319a58a58d8af295db97dfeecc4e250179c5966beaa2d842a82f0a013b6a239b",
+            strip_prefix = "re2-8e08f47b11b413302749c0d8b17a1c94777495d5",
+            urls = [
+                "https://github.com/google/re2/archive/8e08f47b11b413302749c0d8b17a1c94777495d5.tar.gz",
+            ],
+        )
 
     # fmtlib
-    fmt_ver = kwargs.get("fmt_ver", "6.2.0")
-    fmt_sha256 = kwargs.get("fmt_sha256", "fe6e4ff397e01c379fc4532519339c93da47404b9f6674184a458a9967a76575")
+    fmt_ver = kwargs.get("fmt_ver", "9.1.0")
+    fmt_sha256 = kwargs.get("fmt_sha256", "5dea48d1fcddc3ec571ce2058e13910a0d4a6bab4cc09a809d8b1dd1c88ae6f2")
     fmt_urls = [
         "https://github.com/fmtlib/fmt/archive/{ver}.tar.gz".format(ver = fmt_ver),
     ]
@@ -266,7 +277,6 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
         urls = fmt_urls,
     )
 
-    # OpenSSL installed on local file system, prefix: `/usr/`.
     native.new_local_repository(
         name = "openssl",
         path = "/usr",
@@ -302,24 +312,59 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
         urls = fbs_urls,
     )
 
-    opentelemetry_cpp_ver = kwargs.get("opentelemetry_cpp_ver", "0.7.0")
-    opentelemetry_cpp_sha256 = kwargs.get("opentelemetry_cpp_sha256", "147be991aeb7b3f8c2a2d65fe53a97577d10c6b286991fa8715b321d1d7f2b69")
-    opentelemetry_cpp_urls = [
-        "https://github.com/open-telemetry/opentelemetry-cpp/archive/v{ver}.tar.gz".format(ver = opentelemetry_cpp_ver),
-    ]
-    http_archive(
-        name = "opentelemetry_cpp",
-        sha256 = opentelemetry_cpp_sha256,
-        strip_prefix = "opentelemetry-cpp-{ver}".format(ver = opentelemetry_cpp_ver),
-        urls = opentelemetry_cpp_urls,
-    )
 
     new_git_repository(
         name = "com_github_opentelemetry_proto",
-        build_file = clean_dep("@tps_sdk_cpp//bazel:opentelemetry_proto.BUILD"),
+        build_file = clean_dep("//third_party/opentelemetry-cpp:opentelemetry_cpp.BUILD"),
         remote = "https://github.com/open-telemetry/opentelemetry-proto",
-        tag = "v0.8.0",
+        tag = "v0.11.0",
     )
+
+    io_opentelemetry_cpp_ver = kwargs.get("io_opentelemetry_cpp_ver", "1.3.0")
+    io_opentelemetry_cpp_sha256 = kwargs.get("io_opentelemetry_cpp_sha256", "6a4c43b9c9f753841ebc0fe2717325271f02e2a1d5ddd0b52735c35243629ab3")
+    io_opentelemetry_cpp_urls = [
+        "https://github.com/open-telemetry/opentelemetry-cpp/archive/v{ver}.tar.gz".format(ver = io_opentelemetry_cpp_ver),
+    ]
+    http_archive(
+        name = "io_opentelemetry_cpp",
+        sha256 = io_opentelemetry_cpp_sha256,
+        strip_prefix = "opentelemetry-cpp-{ver}".format(ver = io_opentelemetry_cpp_ver),
+        urls = io_opentelemetry_cpp_urls,
+    )
+
+    # opentelemetry_cpp需要的依赖
+    curl_ver = kwargs.get("curl_ver", "7.81.0")
+    curl_path_ver = kwargs.get("curl_path_ver", "7_81_0")
+    curl_sha256 = kwargs.get("curl_sha256", "61570dcebdf913c3675c91decd512f9bfe352f257036a86b73dabf2035eefeca")
+    curl_urls = [
+        "https://github.com/curl/curl/releases/download/curl-{path_ver}/curl-{ver}.zip".format(ver = curl_ver, path_ver = curl_path_ver),
+    ]
+    http_archive(
+        name = "curl",
+        sha256 = curl_sha256,
+        strip_prefix = "curl-{ver}".format(ver = curl_ver),
+        build_file = clean_dep("//third_party/curl:curl.BUILD"),
+        urls = curl_urls,
+        patches = [
+            clean_dep("//third_party/curl:0001-generate-header-files.patch"),
+        ],
+        patch_args = ["-p1"],
+    )
+
+    # opentelemetry_cpp需要的依赖
+    github_nlohmann_json_ver = kwargs.get("github_nlohmann_json_ver", "3.6.1")
+    github_nlohmann_json_sha256 = kwargs.get("github_nlohmann_json_sha256", "2a515568e5b09babf7277f7d9ff2e2ae8ad6c94ec647e38e8b174628733dc2f5")
+    github_nlohmann_json_urls = [
+        "https://github.com/nlohmann/json/archive/refs/tags/{ver}.tar.gz".format(ver = github_nlohmann_json_ver),
+    ]
+    http_archive(
+        name = "github_nlohmann_json",
+        sha256 = github_nlohmann_json_sha256,
+        strip_prefix = "json-{ver}".format(ver = github_nlohmann_json_ver),
+        build_file = clean_dep("@io_opentelemetry_cpp//bazel:nlohmann_json.BUILD"),
+        urls = github_nlohmann_json_urls,
+    )
+
 
     # libnghttp2 版本 摘要
     # url: https://github.com/nghttp2/nghttp2/releases/download/v1.40.0/nghttp2-1.40.0.tar.gz
@@ -391,3 +436,4 @@ def sylar_workspace(path_prefix = "", tf_repo_name = "", **kwargs):
         strip_prefix = liburing_name,
         urls = liburing_urls,
     )
+

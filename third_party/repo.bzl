@@ -83,7 +83,7 @@ def _apply_delete(ctx, paths):
 
 def _sylar_http_archive(ctx):
     if ("mirror.bazel.build" not in ctx.attr.urls[0] and
-        (len(ctx.attr.urls) < 2 and
+        (len(ctx.attr.urls) < 1 and
          ctx.attr.name not in _SINGLE_URL_WHITELIST.to_list())):
         fail("sylar_http_archive(urls) must have redundant URLs. The " +
              "mirror.bazel.build URL must be present and it must come first. " +

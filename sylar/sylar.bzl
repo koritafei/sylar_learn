@@ -131,7 +131,8 @@ def _proto_collector_aspect_impl(target, ctx):
         import_flags += [flag for flag in dep[sylarProtoCollectorInfo].import_flags.to_list()]
         if CcInfo in target and ProtoInfo in dep:
             # cc_proto_library仅能依赖一个proto_library，因此下面赋值仅发生一次
-            proto_deps = dep[sylarProtoCollectorInfo].proto_deps
+            for proto_dep in dep[sylarProtoCollectorInfo].proto_deps.to_list():
+                proto_deps.append(proto_dep)
 
     return [sylarProtoCollectorInfo(
         proto = depset(proto),
@@ -166,8 +167,17 @@ def _proto_gen_impl(ctx):
         import_flags = ["-I."]
 
     for dep in ctx.attr.deps:
-        import_flags += dep.proto.import_flags
-        deps += dep.proto.deps
+        # 兼容同时存在高版本bazel-4.2以及高protobuf-3.20时候，dep为depset类型的问题
+        # 注意：protobuf-3.20只能在bazel-4以上才能编译通过
+        if type(dep.proto.import_flags) == "depset":
+            import_flags += dep.proto.import_flags.to_list()
+        else:
+            import_flags += dep.proto.import_flags
+
+        if type(dep.proto.deps) == "depset":
+            deps += dep.proto.deps.to_list()
+        else:
+            deps += dep.proto.deps
 
     for dep in ctx.attr.native_cc_proto_deps:
         deps += dep[sylarProtoCollectorInfo].proto.to_list()
@@ -255,6 +265,12 @@ def _proto_gen_impl(ctx):
                 outdir = "generate_new_mock_code=true:" + outdir
             elif ctx.attr.generate_mock_code:
                 outdir = "generate_mock_code=true:" + outdir
+
+            if ctx.attr.enable_explicit_link_proto:
+                if ctx.attr.generate_new_mock_code or ctx.attr.generate_mock_code:
+                    outdir = "enable_explicit_link_proto=true," + outdir
+                else:
+                    outdir = "enable_explicit_link_proto=true:" + outdir
 
             if pblibdep_gen_sylar_stub:
                 # 为传递参数给插件以生成合适路径的桩代码
@@ -367,6 +383,7 @@ proto_gen = rule(
         "outs": attr.output_list(),
         "generate_mock_code": attr.bool(default = False),
         "generate_new_mock_code": attr.bool(default = False),
+        "enable_explicit_link_proto": attr.bool(default = False),
     },
     output_to_genfiles = True,
     implementation = _proto_gen_impl,
@@ -415,6 +432,7 @@ def tc_cc_proto_library(
         plugin = "",
         default_runtime = "@com_google_protobuf//:protobuf",
         gen_pbcc = True,
+        enable_explicit_link_proto = False,
         **kargs):
     """Bazel rule to create a C++ protobuf library from proto source files
 
@@ -539,16 +557,35 @@ def tc_cc_proto_library(
         outs = outs,
         visibility = ["//visibility:public"],
         gen_pbcc = gen_pbcc,
+        enable_explicit_link_proto = enable_explicit_link_proto,
     )
 
-    native.cc_library(
-        name = name + "_raw",
-        srcs = gen_srcs.raw,
-        hdrs = gen_hdrs.raw,
-        deps = deps + [default_runtime] + acutal_native_proto_deps + native_cc_proto_deps,
-        includes = includes,
-        **kargs
-    )
+    if not enable_explicit_link_proto:
+        native.cc_library(
+            name = name + "_raw",
+            srcs = gen_srcs.raw,
+            hdrs = gen_hdrs.raw,
+            deps = deps + [default_runtime] + acutal_native_proto_deps + native_cc_proto_deps,
+            includes = includes,
+            **kargs
+        )
+    else:
+        # 本地不存在proto文件，直接通过原生proto规则（proto_library/cc_proto_library）拉取远程proto文件，生成的桩代码的场景需要加载pb.cc文件
+        remote_pb_srcs = []
+        if len(srcs) == 0 and (len(acutal_native_proto_deps) + len(native_cc_proto_deps)) == 1:
+            if len(acutal_native_proto_deps) == 1:
+                remote_pb_srcs.append(acutal_native_proto_deps[0])
+            elif len(native_cc_proto_deps) == 1:
+                remote_pb_srcs.append(native_cc_proto_deps[0])
+        native.cc_library(
+            name = name + "_raw",
+            alwayslink = True,  # 尽管pb.h里定义的接口/数据类型也没有被使用，仍然加载pb.cc（proto的options获取需要加载pb.cc内的proto文件内容）
+            srcs = gen_srcs.raw + remote_pb_srcs,
+            hdrs = gen_hdrs.raw,
+            deps = deps + [default_runtime] + acutal_native_proto_deps + native_cc_proto_deps,
+            includes = includes,
+            **kargs
+        )
 
     native.cc_library(
         name = name,
@@ -612,16 +649,20 @@ def sylar_proto_library(
         rootpath = "",
         gen_pbcc = True,
         plugin = None,
+        # 仅启用链接proto选项的才会生成获取option的桩代码，因为获取option要求必须能链接pb.cc
+        # 在复杂场景下可能不能链接成功，需要针对性的排查，默认关闭
+        enable_explicit_link_proto = False,
         **kargs):
     sylar_libs = []
     plugin_language = ""
     if (use_sylar_plugin):
         sylar_libs = [
-            "%s//sylar/server:rpc_service_impl" % rootpath,
-            "%s//sylar/server:rpc_method_handler" % rootpath,
-            "%s//sylar/server:stream_rpc_method_handler" % rootpath,
-            #"%s//sylar/client:sylar_service_proxy" % rootpath,
             "%s//sylar/client:rpc_service_proxy" % rootpath,
+            "%s//sylar/server:rpc_async_method_handler" % rootpath,
+            "%s//sylar/server:rpc_method_handler" % rootpath,
+            "%s//sylar/server:rpc_service_impl" % rootpath,
+            "%s//sylar/server:stream_rpc_async_method_handler" % rootpath,
+            "%s//sylar/server:stream_rpc_method_handler" % rootpath,
             "%s//sylar/stream:stream" % rootpath,
         ]
         plugin_language = "sylar"
@@ -645,6 +686,7 @@ def sylar_proto_library(
         generate_new_mock_code = generate_new_mock_code,
         default_runtime = "@com_google_protobuf//:protobuf",
         gen_pbcc = gen_pbcc,
+        enable_explicit_link_proto = enable_explicit_link_proto,
         **kargs
     )
 
