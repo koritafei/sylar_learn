@@ -57,29 +57,37 @@ bool Env::init(int argc, char **argv) {
 }
 
 void Env::add(const std::string &key, const std::string &val) {
+  RWMutexType::WriteLock lock(m_mutex);
   m_args[key] = val;
 }
 
 bool Env::has(const std::string &key) {
-  auto iter = m_args.find(key);
+  RWMutexType::ReadLock lock(m_mutex);
+  auto                  iter = m_args.find(key);
   return iter != m_args.end();
 }
 
 void Env::del(const std::string &key) {
+  RWMutexType::WriteLock lock(m_mutex);
+
   m_args.erase(key);
 }
 
 std::string Env::get(const std::string &key, const std::string &default_value) {
+  RWMutexType::ReadLock lock(m_mutex);
+
   auto iter = m_args.find(key);
   return iter != m_args.end() ? iter->second : default_value;
 }
 
 void Env::addHelp(const std::string &key, const std::string &desc) {
   removeHelp(key);
+  RWMutexType::WriteLock lock(m_mutex);
   m_helpers.push_back(std::make_pair(key, desc));
 }
 
 void Env::removeHelp(const std::string &key) {
+  RWMutexType::WriteLock lock(m_mutex);
   for (auto iter = m_helpers.begin(); iter != m_helpers.end();) {
     if (key == iter->first) {
       iter = m_helpers.erase(iter);
@@ -90,6 +98,7 @@ void Env::removeHelp(const std::string &key) {
 }
 
 void Env::printHelp() {
+  RWMutexType::ReadLock lock(m_mutex);
   std::cout << "Usage: " << m_program << " [options]" << std::endl;
   for (auto &i : m_helpers) {
     std::cout << std::setw(5) << "-" << i.first << " : " << i.second

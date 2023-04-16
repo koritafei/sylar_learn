@@ -6,13 +6,76 @@
 #include <ifaddrs.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include <string>
 
+#include "sylar/fiber.h"
+#include "sylar/log.h"
+
 namespace sylar {
+
+static sylar::Logger::ptr g_logger = LOG_NAME("system");
+
+pid_t GetThreadId() {
+  return syscall(SYS_gettid);
+}
+
+uint32_t GetFiberId() {
+  return sylar::Fiber::GetFiberId();
+}
+
+static std::string demangle(const char *str) {
+  size_t      size   = 0;
+  int         status = 0;
+  std::string rt;
+  rt.resize(256);
+  if (1 == sscanf(str, "%*[^(]%*[^_]%255[^)+]", &rt[0])) {
+    char *v = abi::__cxa_demangle(&rt[0], nullptr, &size, &status);
+    if (v) {
+      std::string result(v);
+      free(v);
+      return result;
+    }
+  }
+  if (1 == sscanf(str, "%255s", &rt[0])) {
+    return rt;
+  }
+
+  return str;
+}
+
+void BackTrace(std::vector<std::string> &bt, int size, int skip) {
+  void **array = (void **)malloc(sizeof(void *) * size);
+  size_t s     = ::backtrace(array, size);
+
+  char **strings = backtrace_symbols(array, size);
+  if (nullptr == strings) {
+    LOG_ERROR(g_logger) << "backtrace_synbols error";
+    return;
+  }
+
+  for (size_t i = skip; i < s; ++i) {
+    bt.push_back(demangle(strings[i]));
+  }
+
+  free(strings);
+  free(array);
+}
+
+std::string BackTraceToString(int size, int skip, const std::string &prefix) {
+  std::vector<std::string> vec;
+  BackTrace(vec, size, skip);
+  std::stringstream ss;
+  for (std::size_t i = 0; i < vec.size(); ++i) {
+    ss << prefix << vec[i] << std::endl;
+  }
+
+  return ss.str();
+}
 
 std::string FSUtil::Dirname(const std::string &filename) {
   if (filename.empty()) {

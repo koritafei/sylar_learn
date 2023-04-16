@@ -1,62 +1,32 @@
 package(default_visibility = ["//visibility:public"])
 
-
 # https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
 cc_library(
-  name = "noncopyable",
-  hdrs = ["noncopyable.h"],
-)
-
-# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
-cc_library(
-  name = "singleton",
-  hdrs = ["singleton.h"],
-)
-
-# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
-cc_library(
-  name = "log",
-  srcs = ["log.cc"],
-  hdrs = ["log.h"],
+  name = "sylar",
+  srcs = [
+    "log.cc",
+    "env.cc",
+    "util.cc",
+    "config.cc",
+    "mutex.cc",
+    "thread.cc",
+    "fiber.cc",
+    "scheduler.cc",
+    ],
+  hdrs = [ 
+          "noncopyable.h",
+          "singleton.h",
+          "log.h",
+          "env.h",
+          "util.h",
+          "config.h",
+          "mutex.h",
+          "thread.h",
+          "macro.h",
+          "scheduler.h",
+          "fiber.h",
+        ],
   deps = [
-    ":singleton",
-    ":util",
-    "@com_github_jbeder_yaml_cpp//:yaml-cpp",
-    ]
- )
-
-
-
-# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
-cc_library(
-  name = "env",
-  srcs = ["env.cc"],
-  hdrs = ["env.h"],
-  deps = [
-    ":log"
+        "@com_github_jbeder_yaml_cpp//:yaml-cpp",
   ],
 )
-
-
-# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
-cc_library(
-  name = "util",
-  srcs = ["util.cc"],
-  hdrs = ["util.h"],
-  deps = [],
-)
-
-
-# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
-cc_library(
-  name = "config",
-  srcs = ["config.cc"],
-  hdrs = ["config.h"],
-  deps = [
-    ":log",
-    ":env",
-    ":util",
-    "@com_github_jbeder_yaml_cpp//:yaml-cpp",
-    ],
-)
-

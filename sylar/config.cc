@@ -13,7 +13,8 @@ namespace sylar {
 static sylar::Logger::ptr g_logger = LOG_NAME("system");
 
 ConfigVarBase::ptr Config::LookupBase(const std::string &name) {
-  auto it = GetDatas().find(name);
+  RWMutexType::ReadLock lock(GetMutex());
+  auto                  it = GetDatas().find(name);
   return it == GetDatas().end() ? nullptr : it->second;
 }
 
@@ -67,6 +68,7 @@ void Config::LoadFromYaml(const YAML::Node &root) {
 }
 
 static std::map<std::string, uint64_t> s_file2modifytime;
+static sylar::Mutex                    s_mutex;
 
 void Config::LoadFromConfDir(const std::string &path, bool force) {
   std::string abspath = sylar::EnvMgr::GetInstance()->getAbsolutePath(path);
@@ -77,6 +79,7 @@ void Config::LoadFromConfDir(const std::string &path, bool force) {
     {
       struct stat st;
       lstat(i.c_str(), &st);
+      sylar::Mutex::Lock lock(s_mutex);
       if (!force && s_file2modifytime[i] == (uint64_t)st.st_mtime) {
         continue;
       }
@@ -95,7 +98,8 @@ void Config::LoadFromConfDir(const std::string &path, bool force) {
 }
 
 void Config::Visit(std::function<void(ConfigVarBase::ptr)> cb) {
-  ConfigVarMap maps = GetDatas();
+  RWMutexType::ReadLock lock(GetMutex());
+  ConfigVarMap          maps = GetDatas();
   for (auto it = maps.begin(); it != maps.end(); it++) {
     cb(it->second);
   }

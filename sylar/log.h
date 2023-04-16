@@ -16,22 +16,23 @@
 #include <tuple>
 #include <vector>
 
+#include "sylar/mutex.h"
 #include "sylar/singleton.h"
+#include "sylar/thread.h"
 #include "sylar/util.h"
-
-const std::string test = "test";
 
 #define LOG_LEVEL(logger, level)                                               \
   if (level >= logger->getLevel())                                             \
-  sylar::LogEventWrap(sylar::LogEvent::ptr(new sylar::LogEvent(logger,         \
-                                                               level,          \
-                                                               __FILE__,       \
-                                                               __LINE__,       \
-                                                               0,              \
-                                                               time(0),        \
-                                                               0,              \
-                                                               0,              \
-                                                               test)))         \
+  sylar::LogEventWrap(                                                         \
+      sylar::LogEvent::ptr(new sylar::LogEvent(logger,                         \
+                                               level,                          \
+                                               __FILE__,                       \
+                                               __LINE__,                       \
+                                               0,                              \
+                                               time(0),                        \
+                                               sylar::GetThreadId(),           \
+                                               sylar::GetFiberId(),            \
+                                               sylar::Thread::GetName())))     \
       .getSS()
 
 #define LOG_DEBUG(logger) LOG_LEVEL(logger, sylar::LogLevel::DEBUG)
@@ -42,15 +43,16 @@ const std::string test = "test";
 
 #define LOG_LEVEL_FORMAT(logger, level, fmt, ...)                              \
   if (level >= logger->getLevel())                                             \
-  sylar::LogEventWrap(sylar::LogEvent::ptr(new sylar::LogEvent(logger,         \
-                                                               level,          \
-                                                               __FILE__,       \
-                                                               __LINE__,       \
-                                                               0,              \
-                                                               time(0),        \
-                                                               0,              \
-                                                               0,              \
-                                                               test)))         \
+  sylar::LogEventWrap(                                                         \
+      sylar::LogEvent::ptr(new sylar::LogEvent(logger,                         \
+                                               level,                          \
+                                               __FILE__,                       \
+                                               __LINE__,                       \
+                                               0,                              \
+                                               time(0),                        \
+                                               sylar::GetThreadId(),           \
+                                               sylar::GetFiberId(),            \
+                                               sylar::thread::GetName())))     \
       .getLogEvent()                                                           \
       ->format(fmt, __VA_ARGS__)
 #define LOG_FMT_DEBUG(logger, fmt, ...)                                        \
@@ -270,6 +272,7 @@ class LogAppender {
 
 public:
   typedef std::shared_ptr<LogAppender> ptr;
+  typedef SpinLock                     MutexType;
 
   virtual ~LogAppender() {
   }
@@ -292,8 +295,10 @@ public:
   LogFormatter::ptr getFormatter() const;
 
 protected:
-  LogLevel::Level   m_level        = LogLevel::DEBUG;
-  bool              m_hasFormatter = false;
+  LogLevel::Level m_level        = LogLevel::DEBUG;
+  bool            m_hasFormatter = false;
+  /// Mutex
+  MutexType         m_mutex;
   LogFormatter::ptr m_formatter;
 };
 
@@ -329,6 +334,7 @@ class Logger : public std::enable_shared_from_this<Logger> {
 
 public:
   typedef std::shared_ptr<Logger> ptr;
+  typedef SpinLock                MutexType;
 
   Logger(const std::string &name = "root");
 
@@ -364,8 +370,10 @@ public:
 
 private:
   /// @brief 日志名称
-  std::string                 m_name;
-  LogLevel::Level             m_level = LogLevel::DEBUG;
+  std::string     m_name;
+  LogLevel::Level m_level = LogLevel::DEBUG;
+  /// Mutex
+  MutexType                   m_mutex;
   std::list<LogAppender::ptr> m_appender;
   LogFormatter::ptr           m_formatter;
   Logger::ptr                 m_root;
@@ -373,6 +381,7 @@ private:
 
 class LoggerManager {
 public:
+  typedef SpinLock MutexType;
   LoggerManager();
 
   Logger::ptr getLogger(const std::string &name);
@@ -385,6 +394,8 @@ public:
   std::string toYamlString();
 
 private:
+  /// Mutex
+  MutexType                          m_mutex;
   std::map<std::string, Logger::ptr> m_loggers;
   Logger::ptr                        m_root;
 };
