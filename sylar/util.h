@@ -48,6 +48,18 @@ std::string BackTraceToString(int                size   = 64,
                               int                skip   = 2,
                               const std::string &prefix = "");
 
+/**
+ * @brief  获取当前时间的毫秒
+ * @return uint64_t
+ * */
+uint64_t GetCurrentMs();
+
+/**
+ * @brief  获取当前时间的微秒
+ * @return uint64_t
+ * */
+uint64_t GetCurrentUs();
+
 template <class T>
 const char *TypeToName() {
   static const char *s_name =

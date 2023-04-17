@@ -12,6 +12,7 @@ cc_library(
     "thread.cc",
     "fiber.cc",
     "scheduler.cc",
+    "timer.cc",
     ],
   hdrs = [ 
           "noncopyable.h",
@@ -25,6 +26,7 @@ cc_library(
           "macro.h",
           "scheduler.h",
           "fiber.h",
+          "timer.h",
         ],
   deps = [
         "@com_github_jbeder_yaml_cpp//:yaml-cpp",

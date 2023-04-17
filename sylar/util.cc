@@ -190,4 +190,16 @@ bool FSUtil::OpenForWrite(std::ofstream          &ofs,
   return ofs.is_open();
 }
 
+uint64_t GetCurrentMs() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return tv.tv_sec * 1000ul + tv.tv_usec / 1000;
+}
+
+uint64_t GetCurrentUs() {
+  struct timeval tm;
+  gettimeofday(&tm, NULL);
+  return tm.tv_sec * 1000 * 1000ul + tm.tv_usec;
+}
+
 }  // namespace sylar
