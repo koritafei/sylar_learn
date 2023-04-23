@@ -48,3 +48,11 @@ cc_binary (
    "//sylar:sylar",
   ],
 )
+
+cc_binary (
+  name="iomanager_unittest",
+  srcs= ["iomanager_unittest.cc"],
+  deps = [
+   "//sylar:sylar",
+  ],
+)
