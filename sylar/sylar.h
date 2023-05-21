@@ -4,6 +4,7 @@
 #include "sylar/config.h"
 #include "sylar/env.h"
 #include "sylar/fiber.h"
+#include "sylar/hook.h"
 #include "sylar/iomanager.h"
 #include "sylar/log.h"
 #include "sylar/macro.h"

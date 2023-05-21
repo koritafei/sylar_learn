@@ -14,7 +14,8 @@ cc_library(
     "scheduler.cc",
     "timer.cc",
     "iomanager.cc",
-
+    "fd_manager.cc",
+    "hook.cc"
     ],
   hdrs = [ 
           "noncopyable.h",
@@ -31,6 +32,8 @@ cc_library(
           "timer.h",
           "iomanager.h",
           "sylar.h",
+          "fd_manager.h",
+          "hook.h",
         ],
   deps = [
         "@com_github_jbeder_yaml_cpp//:yaml-cpp",

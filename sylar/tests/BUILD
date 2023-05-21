@@ -56,3 +56,11 @@ cc_binary (
    "//sylar:sylar",
   ],
 )
+
+cc_binary (
+  name="hook_unittest",
+  srcs= ["hook_unittest.cc"],
+  deps = [
+   "//sylar:sylar",
+  ],
+)
