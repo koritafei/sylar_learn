@@ -1,41 +1,21 @@
+licenses(["notice"])  # Apache v2
+
 package(default_visibility = ["//visibility:public"])
+
+exports_files(["LICENSE"])
 
 # https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
 cc_library(
-  name = "sylar",
-  srcs = [
-    "log.cc",
-    "env.cc",
-    "util.cc",
-    "config.cc",
-    "mutex.cc",
-    "thread.cc",
-    "fiber.cc",
-    "scheduler.cc",
-    "timer.cc",
-    "iomanager.cc",
-    "fd_manager.cc",
-    "hook.cc"
-    ],
-  hdrs = [ 
-          "noncopyable.h",
-          "singleton.h",
-          "log.h",
-          "env.h",
-          "util.h",
-          "config.h",
-          "mutex.h",
-          "thread.h",
-          "macro.h",
-          "scheduler.h",
-          "fiber.h",
-          "timer.h",
-          "iomanager.h",
-          "sylar.h",
-          "fd_manager.h",
-          "hook.h",
-        ],
-  deps = [
-        "@com_github_jbeder_yaml_cpp//:yaml-cpp",
-  ],
+    name = "noncopyable",
+    hdrs = ["noncopyable.h"],
+    deps = [],
+    alwayslink = True,
+)
+
+# https://docs.bazel.build/versions/master/be/c-cpp.html#cc_library
+cc_library(
+    name = "singleton",
+    hdrs = ["singleton.h"],
+    deps = [],
+    alwayslink = True,
 )
